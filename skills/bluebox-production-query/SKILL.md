@@ -2,7 +2,7 @@
 name: bluebox-production-query
 description: 'Use BEFORE designing, planning, or implementing any change to a live, Bluebox-visible service — and when in plan mode about to present a plan (before ExitPlanMode) that touches such a service, to assess the plan against monitoring. Provides production context via `bluebox ask`. Triggers: "what does production look like", "current error rate", "p95/p99 latency", "who calls this service", "downstream dependencies", "can it handle the load", "production baseline", "is there an active problem", "what SLOs are at risk", "bluebox ask", "stack trace", "this error in production", "500s", "exception in prod", "users are reporting", "is this safe to merge", "review this change", "plan this change", "in plan mode", "before ExitPlanMode", "assess this plan", "check the plan against monitoring", "ship today", "implement/refactor/migrate a deployed service", "before we deploy", "roll out".'
 metadata:
-  version: "0.8.0"
+  version: "0.8.1"
   former-names: "production-query"
 ---
 
@@ -313,8 +313,9 @@ default GitHub Actions shells lack.)
   the event, or end the window a few minutes in the past (time rules in Planning).
 - **In CI, supply `BLUEBOX_TOKEN` from the platform secret store** (`${{ secrets.BLUEBOX_TOKEN }}`) — never inline a token in committed workflow YAML, scripts, or `.env`.
 - **Headless agents:** skill frontmatter grants no tool permissions — a headless Claude Code
-  run needs `--allowedTools "Bash(bluebox:*)"` (or a `settings.json` grant) or every
-  `bluebox ask` stalls on approval.
+  run needs `--allowedTools "Bash(bluebox ask:*)" "Bash(bluebox services:*)"` (or a
+  `settings.json` grant) or every `bluebox ask` stalls on approval. Not `Bash(bluebox:*)`:
+  that also runs `bluebox setup`, `update` and `uninstall` unprompted.
 - A gate verdict is still a verdict — record it (see **Record the verdict**).
 
 ## Boundaries

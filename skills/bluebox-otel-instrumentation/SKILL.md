@@ -12,7 +12,7 @@ description: >
   tracing", "OTel setup", "wire up telemetry for Bluebox".
 compatibility: Coding agents (Claude Code, Cursor, Windsurf, Copilot, Kiro, OpenCode, Codex)
 metadata:
-  version: "3.11.2"
+  version: "3.11.4"
   audience: coding-agent
 ---
 

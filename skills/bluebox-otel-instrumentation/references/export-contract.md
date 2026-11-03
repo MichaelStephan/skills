@@ -61,10 +61,12 @@ a collector never applied or started `blocked` (`not_started`), never verified.
 ## Identity attributes (Hard rule 5)
 
 `vcs.repository.url.full` + `vcs.ref.head.revision` from build-time values (build-arg ->
-env; the URL loses any userinfo, the part between `//` and `@`, before it becomes the build-arg; drop the pair when empty, never emit empties; the bootstrap reads the env only, never
-the `git` CLI or `.git` at service start), `deployment.environment.name` (the
-plan table's one environment name, never a second spelling), plus cloud resource
-attributes where a detector exists.
+env; drop the pair when empty; the bootstrap reads the env only, never
+`git` or `.git` at service start), `deployment.environment.name` (the
+plan table's one spelling), plus cloud
+attributes where a detector exists. Before the URL becomes the build-arg, make it
+`https://<host>/<owner>/<repo>`, case kept: map ssh or `http://`, drop userinfo, port, a
+trailing `.git` or `/`. Bluebox matches it exactly.
 
 ## The `Authorization` value (Hard rule 8)
 
@@ -78,7 +80,8 @@ through the env location the plan names, by the one of two supply paths the plan
   pastes it into the env location the plan names (Workflow step 4 gives the wording). A
   manually-connected backend reveals one only after the user saves their own token in
   the Setup page's Workspace OTLP ingest token field; until then the user writes that
-  line from that token, never you.
+  line from that token, never you. A token added or rotated under **Settings →
+  Instrumentation** is shown bare, once; the user writes that line from it too.
 - **The token-file convention.** Where the repo's own dev notes route the token through
   `~/.bluebox/ingest-token.env` - outside the repository, mode 600, holding
   `BLUEBOX_INGEST_TOKEN=<token>` - the repo's start command derives the header at start

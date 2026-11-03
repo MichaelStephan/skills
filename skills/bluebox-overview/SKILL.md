@@ -3,7 +3,7 @@ name: bluebox-overview
 description: Teaches a coding agent what Bluebox is, when to invoke it, and how to phrase requests so the agent picks the right Bluebox skill — investigation, instrumentation, or monitoring.
 compatibility: Installed into coding agents by `bluebox setup`; compatible with Claude Code, Cursor, Windsurf, GitHub Copilot, Kiro, OpenCode, and Codex.
 metadata:
-  version: '1.3'
+  version: '1.4'
 ---
 
 # Bluebox Overview
@@ -16,7 +16,7 @@ Reach for Bluebox when you need to:
 
 - **Investigate a production incident** — Bluebox gathers Dynatrace problems, logs, traces, and metrics, correlates them with recent code changes, and delivers a structured root-cause diagnosis.
 - **Instrument a service** — Bluebox detects your language and deployment model, then sets up repo-local OpenTelemetry for server-side traces. Metrics and logs are optional follow-up scope; RUM, AppSec, infrastructure monitoring, synthetics, SLOs, dashboards, and alerts require separate setup paths.
-- **Monitor and verify a deploy** — Bluebox compares service health against a pre-deploy baseline and routes to remediation if regressions are detected.
+- **Verify a deploy** — Bluebox compares service health after a deploy with the period before it and names any regression. It reports what it finds; it does not roll back or change anything.
 
 ## Example prompts
 
@@ -31,10 +31,12 @@ Reach for Bluebox when you need to:
 - "instrument the API endpoints"
 - "set up distributed tracing for the orders service"
 
-### Monitoring
-- "set up an SLO for the search service"
-- "configure an alert when error rate exceeds 1%"
+### Deploy verification and monitoring
 - "verify the deploy didn't degrade P99 latency"
+- "compare the checkout service's error rate before and after today's deploy"
+- "which SLOs and alerts cover the search service, and is any of them burning?"
+
+Bluebox reads existing SLOs, alerts, and dashboards; it does not create them on request. Set those up in your observability backend.
 
 ## Learning more about Bluebox
 
