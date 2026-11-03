@@ -38,12 +38,14 @@ Name one or more skills after `--skill` to install only those; `bluebox-otel-ins
 
 ### Claude Code plugin
 
-In Claude Code, you can install all the skills as one plugin instead:
+In Claude Code, you can install all the skills as one plugin instead. The plugin also connects Claude Code to the [Bluebox MCP server](https://docs.bluebox.ai/mcp-server):
 
 ```bash
 claude plugin marketplace add bluebox-hq/skills
 claude plugin install bluebox@bluebox-skills
 ```
+
+To sign in to the MCP server, run `/mcp` in Claude Code, select `plugin:bluebox:bluebox` and log in to Bluebox in your browser. You don't need an access token.
 
 The plugin updates when this repository changes. Don't also install the skills with `npx skills` or `bluebox setup`, or Claude Code loads each skill twice.
 
