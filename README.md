@@ -62,12 +62,13 @@ Codex opens the Bluebox sign-in when you install the plugin. If you skip it, run
 
 ### Cursor
 
-Clone this repository and link it into your local plugins folder:
+Clone this repository into your local plugins folder:
 
 ```bash
-git clone https://github.com/bluebox-hq/skills.git ~/bluebox-skills
-ln -s ~/bluebox-skills ~/.cursor/plugins/local/bluebox
+git clone https://github.com/bluebox-hq/skills.git ~/.cursor/plugins/local/bluebox
 ```
+
+Clone it there directly. Cursor rejects a symlink in `~/.cursor/plugins/local` that points outside that folder.
 
 Reload Cursor, then sign in to the `bluebox` MCP server under **Settings → MCP**. To update, run `git pull` in the clone.
 
