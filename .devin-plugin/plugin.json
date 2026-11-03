@@ -8,7 +8,7 @@
   },
   "homepage": "https://bluebox.ai",
   "repository": "https://github.com/bluebox-hq/skills",
-  "logo": "bluebox-logo.png",
+  "logo": "assets/bluebox-logo.png",
   "keywords": [
     "Monitoring & Analytics"
   ],

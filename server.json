@@ -12,7 +12,7 @@
   "websiteUrl": "https://docs.bluebox.ai/mcp-server",
   "icons": [
     {
-      "src": "https://raw.githubusercontent.com/bluebox-hq/skills/main/bluebox-logo.png",
+      "src": "https://raw.githubusercontent.com/bluebox-hq/skills/main/assets/bluebox-logo.png",
       "mimeType": "image/png",
       "sizes": ["512x512"]
     }
