@@ -38,7 +38,7 @@ Name one or more skills after `--skill` to install only those; `bluebox-otel-ins
 
 ## Plugins
 
-Claude Code, Cursor, Google Antigravity and Kiro can install Bluebox as one plugin instead. The plugin also connects your agent to the [Bluebox MCP server](https://docs.bluebox.ai/mcp-server). You sign in to Bluebox in your browser the first time the agent connects, so you don't need an access token.
+Claude Code, Codex, Cursor, Devin, Google Antigravity and Kiro can install Bluebox as one plugin instead. The plugin also connects your agent to the [Bluebox MCP server](https://docs.bluebox.ai/mcp-server). You sign in to Bluebox in your browser the first time the agent connects, so you don't need an access token.
 
 Install the skills with one tool only. If you use the plugin, don't also install the skills with `npx skills` or `bluebox setup`, or your agent loads each skill twice.
 
@@ -51,6 +51,15 @@ claude plugin install bluebox@bluebox
 
 To sign in, run `/mcp` in Claude Code, select `plugin:bluebox:bluebox` and log in to Bluebox. The plugin updates when this repository changes.
 
+### Codex
+
+```bash
+codex plugin marketplace add bluebox-hq/skills
+codex plugin add bluebox@bluebox
+```
+
+Codex opens the Bluebox sign-in when you install the plugin. If you skip it, run `codex mcp login bluebox`. To update, run `codex plugin marketplace upgrade bluebox`.
+
 ### Cursor
 
 Clone this repository and link it into your local plugins folder:
@@ -61,6 +70,14 @@ ln -s ~/bluebox-skills ~/.cursor/plugins/local/bluebox
 ```
 
 Reload Cursor, then sign in to the `bluebox` MCP server under **Settings → MCP**. To update, run `git pull` in the clone.
+
+### Devin
+
+```bash
+devin plugins install bluebox-hq/skills
+```
+
+In Devin Cloud, select **Add plugin → From repository** and enter `bluebox-hq/skills`. Devin opens the Bluebox sign-in when a session first uses the `bluebox` MCP server. The skills also call the `bluebox` CLI, so install it and sign in where Devin runs.
 
 ### Google Antigravity
 
