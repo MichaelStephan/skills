@@ -42,7 +42,7 @@ In Claude Code, you can install all the skills as one plugin instead. The plugin
 
 ```bash
 claude plugin marketplace add bluebox-hq/skills
-claude plugin install bluebox@bluebox-skills
+claude plugin install bluebox@bluebox
 ```
 
 To sign in to the MCP server, run `/mcp` in Claude Code, select `plugin:bluebox:bluebox` and log in to Bluebox in your browser. You don't need an access token.
