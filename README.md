@@ -36,18 +36,43 @@ npx skills add bluebox-hq/skills --skill '*' --agent claude-code cursor
 
 Name one or more skills after `--skill` to install only those; `bluebox-otel-instrumentation-guided` needs `bluebox-otel-instrumentation` too. Add `-g` to install for your user instead of the current project. Prefer `--agent` over `--all`: `--all` installs for every agent `skills` supports and adds a skills folder for each to your project.
 
-### Claude Code plugin
+## Plugins
 
-In Claude Code, you can install all the skills as one plugin instead. The plugin also connects Claude Code to the [Bluebox MCP server](https://docs.bluebox.ai/mcp-server):
+Claude Code, Cursor, Google Antigravity and Kiro can install Bluebox as one plugin instead. The plugin also connects your agent to the [Bluebox MCP server](https://docs.bluebox.ai/mcp-server). You sign in to Bluebox in your browser the first time the agent connects, so you don't need an access token.
+
+Install the skills with one tool only. If you use the plugin, don't also install the skills with `npx skills` or `bluebox setup`, or your agent loads each skill twice.
+
+### Claude Code
 
 ```bash
 claude plugin marketplace add bluebox-hq/skills
 claude plugin install bluebox@bluebox
 ```
 
-To sign in to the MCP server, run `/mcp` in Claude Code, select `plugin:bluebox:bluebox` and log in to Bluebox in your browser. You don't need an access token.
+To sign in, run `/mcp` in Claude Code, select `plugin:bluebox:bluebox` and log in to Bluebox. The plugin updates when this repository changes.
 
-The plugin updates when this repository changes. Don't also install the skills with `npx skills` or `bluebox setup`, or Claude Code loads each skill twice.
+### Cursor
+
+Clone this repository and link it into your local plugins folder:
+
+```bash
+git clone https://github.com/bluebox-hq/skills.git ~/bluebox-skills
+ln -s ~/bluebox-skills ~/.cursor/plugins/local/bluebox
+```
+
+Reload Cursor, then sign in to the `bluebox` MCP server under **Settings → MCP**. To update, run `git pull` in the clone.
+
+### Google Antigravity
+
+```bash
+agy plugin install https://github.com/bluebox-hq/skills
+```
+
+Antigravity opens the Bluebox sign-in when it first connects to the `bluebox` MCP server.
+
+### Kiro
+
+Kiro installs Bluebox as a power: the MCP server plus a guide for the agent ([POWER.md](POWER.md)). Open the **Powers** panel, select **Add Custom Power**, choose **GitHub repository** and enter `https://github.com/bluebox-hq/skills`. Kiro opens the Bluebox sign-in when it first connects. The power doesn't include the skills. To add them, run `npx skills add bluebox-hq/skills --skill '*' --agent kiro`.
 
 ## Update and remove
 
