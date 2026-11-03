@@ -10,7 +10,6 @@
     "Load the root cause of the Bluebox investigation behind this GitHub issue",
     "Add OpenTelemetry to this service and send its telemetry to Bluebox"
   ],
-  "category": "Observability",
   "author": {
     "name": "Bluebox",
     "url": "https://bluebox.ai"
