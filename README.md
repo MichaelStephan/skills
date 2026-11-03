@@ -36,6 +36,17 @@ npx skills add bluebox-hq/skills --skill '*' --agent claude-code cursor
 
 Name one or more skills after `--skill` to install only those; `bluebox-otel-instrumentation-guided` needs `bluebox-otel-instrumentation` too. Add `-g` to install for your user instead of the current project. Prefer `--agent` over `--all`: `--all` installs for every agent `skills` supports and adds a skills folder for each to your project.
 
+### Claude Code plugin
+
+In Claude Code, you can install all the skills as one plugin instead:
+
+```bash
+claude plugin marketplace add bluebox-hq/skills
+claude plugin install bluebox@bluebox-skills
+```
+
+The plugin updates when this repository changes. Don't also install the skills with `npx skills` or `bluebox setup`, or Claude Code loads each skill twice.
+
 ## Update and remove
 
 ```bash
