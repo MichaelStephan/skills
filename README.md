@@ -38,7 +38,7 @@ Name one or more skills after `--skill` to install only those; `bluebox-otel-ins
 
 ## Plugins
 
-Claude Code, Codex, Cursor, Devin, Google Antigravity and Kiro can install Bluebox as one plugin instead. The plugin also connects your agent to the [Bluebox MCP server](https://docs.bluebox.ai/mcp-server). You sign in to Bluebox in your browser the first time the agent connects, so you don't need an access token.
+Claude Code, Codex, the ChatGPT desktop app, Cursor, Devin, Google Antigravity and Kiro can install Bluebox as one plugin instead. The plugin also connects your agent to the [Bluebox MCP server](https://docs.bluebox.ai/mcp-server). You sign in to Bluebox in your browser the first time the agent connects, so you don't need an access token.
 
 Install the skills with one tool only. If you use the plugin, don't also install the skills with `npx skills` or `bluebox setup`, or your agent loads each skill twice.
 
@@ -59,6 +59,11 @@ codex plugin add bluebox@bluebox
 ```
 
 Codex opens the Bluebox sign-in when you install the plugin. If you skip it, run `codex mcp login bluebox`. To update, run `codex plugin marketplace upgrade bluebox`.
+
+### ChatGPT
+
+- **ChatGPT desktop app (Work mode):** add the marketplace with `codex plugin marketplace add bluebox-hq/skills`, restart the app, then install **Bluebox** from the `Bluebox` source in the Plugins Directory.
+- **ChatGPT web and mobile:** install Bluebox from the ChatGPT plugin directory once it's listed. Until then, add only the MCP server: open [ChatGPT Plugins](https://chatgpt.com/plugins), select **+** → **Add custom MCP server**, enter `https://app.bluebox.ai/v1/mcp` with OAuth, and select **Create as a plugin**. Your workspace policies decide whether custom MCP servers are allowed.
 
 ### Cursor
 
