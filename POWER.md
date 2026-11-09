@@ -21,7 +21,7 @@ Bluebox is the observability agent for AI-native development. This power connect
 
 # Onboarding
 
-1. You need a Bluebox account and a workspace with your observability backend connected. Services must send OpenTelemetry traces to that workspace.
+1. You need a Bluebox account. The first time you sign in, Bluebox creates a workspace for you. It answers once that workspace has an observability backend connected and your services send OpenTelemetry traces to it.
 2. Install this power. When Kiro connects to the `bluebox` server, sign in to Bluebox in the browser window that opens.
 3. If you belong to more than one workspace, set your **preferred workspace** in your Bluebox profile settings, or pass `workspace_id` to the tools. Call `list_workspaces` to see your workspaces.
 
@@ -36,7 +36,7 @@ Bluebox is the observability agent for AI-native development. This power connect
 
 | Tool | What it does |
 |---|---|
-| `ask` | Asks Bluebox a question about production and returns an evidence-backed answer. Inputs: `question`, optional `service_name` and `environment` or `entity_id`, `repository_url`, `since` (up to 30 days), `workspace_id`, `conversation_id` (follow-up in the same scope), `wait` (up to 50s). Each call counts against the workspace's daily AI usage. |
+| `ask` | Asks Bluebox a question about production and returns an evidence-backed answer. Inputs: `question`, optional `service_name` and `environment` or `entity_id`, `repository_url`, `since` (up to 30 days), `workspace_id`, `conversation_id` (follow-up in the same scope), `investigation_id` (a question about that investigation), `wait` (up to 50s). Each call counts against the workspace's daily AI usage. |
 | `get_ask_result` | Returns the answer of an `ask` that is still running. Inputs: `conversation_id`, `workspace_id`, `wait` (up to 240s). |
 | `list_services` | Lists services with health (`healthy`, `degraded`, `unknown`), `problem_count` and `entity_id`. Filters include `search` and `repository_url`. |
 | `list_investigations` | Lists Bluebox investigations with status and severity, for up to 365 days back. |
@@ -58,7 +58,7 @@ All tools only read Bluebox data. `ask` saves the question and its answer as a c
 ## Build a fix on a Bluebox investigation
 
 1. Call `list_investigations`, or take the investigation linked in the GitHub issue that Bluebox filed.
-2. Call `get_investigation` to load the root cause, impact and evidence.
+2. Call `get_investigation` to load the root cause, impact and evidence. For follow-up questions, call `ask` with its `investigation_id`.
 3. Base the fix on that root cause. After the deploy, call `ask` in the same scope to check that the problem is resolved.
 
 # Best Practices

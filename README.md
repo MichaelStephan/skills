@@ -16,7 +16,7 @@ The skills work with Claude Code, Cursor, GitHub Copilot, Codex, OpenCode, Winds
 
 ## Before you start
 
-The skills call the `bluebox` CLI, so you need a Bluebox account and the CLI. The [Bluebox docs](https://docs.bluebox.ai) show how to install it.
+You need a Bluebox account. The skills use the [Bluebox MCP server](https://docs.bluebox.ai/mcp-server) when your agent has it, and the [`bluebox` CLI](https://docs.bluebox.ai/cli) otherwise. The [Bluebox docs](https://docs.bluebox.ai) show how to set up either.
 
 **If you use `bluebox setup`, you already have these skills.** It installs them into your agents and keeps them up to date. You don't need this repository.
 
@@ -49,7 +49,7 @@ claude plugin marketplace add bluebox-hq/skills
 claude plugin install bluebox@bluebox
 ```
 
-To sign in, run `/mcp` in Claude Code, select `plugin:bluebox:bluebox` and log in to Bluebox. The plugin updates when this repository changes.
+To sign in, run `/mcp` in Claude Code, select `plugin:bluebox:bluebox` and log in to Bluebox. To get updates, turn on auto-update for the `bluebox` marketplace under `/plugin` → **Marketplaces**, or run `claude plugin update bluebox@bluebox`.
 
 ### Codex
 
@@ -75,7 +75,7 @@ git clone https://github.com/bluebox-hq/skills.git ~/.cursor/plugins/local/blueb
 
 Clone it there directly. Cursor rejects a symlink in `~/.cursor/plugins/local` that points outside that folder.
 
-Reload Cursor, then sign in to the `bluebox` MCP server under **Settings → MCP**. To update, run `git pull` in the clone.
+Reload Cursor, then sign in to the `bluebox` MCP server in Cursor's MCP settings. To update, run `git pull` in the clone.
 
 ### Devin
 
@@ -83,7 +83,7 @@ Reload Cursor, then sign in to the `bluebox` MCP server under **Settings → MCP
 devin plugins install bluebox-hq/skills
 ```
 
-In Devin Cloud, select **Add plugin → From repository** and enter `bluebox-hq/skills`. Devin opens the Bluebox sign-in when a session first uses the `bluebox` MCP server. The skills also call the `bluebox` CLI, so install it and sign in where Devin runs.
+In Devin Cloud, select **Add plugin → From repository** and enter `bluebox-hq/skills`. Devin opens the Bluebox sign-in when a session first uses the `bluebox` MCP server.
 
 ### Google Antigravity
 
@@ -95,7 +95,7 @@ Antigravity opens the Bluebox sign-in when it first connects to the `bluebox` MC
 
 ### Kiro
 
-Kiro installs Bluebox as a power: the MCP server plus a guide for the agent ([POWER.md](POWER.md)). Open the **Powers** panel, select **Add Custom Power**, choose **GitHub repository** and enter `https://github.com/bluebox-hq/skills`. Kiro opens the Bluebox sign-in when it first connects. The power doesn't include the skills. To add them, run `npx skills add bluebox-hq/skills --skill '*' --agent kiro`.
+Kiro installs Bluebox as a power: the MCP server plus a guide for the agent ([POWER.md](POWER.md)). Open the **Powers** panel, select **Add Custom Power**, choose **Import power from GitHub** and enter `https://github.com/bluebox-hq/skills`. Kiro opens the Bluebox sign-in when it first connects. The power doesn't include the skills. To add them, run `npx skills add bluebox-hq/skills --skill '*' --agent kiro`.
 
 ## Update and remove
 
