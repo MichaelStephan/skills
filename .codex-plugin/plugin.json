@@ -1,7 +1,7 @@
 {
   "name": "bluebox",
   "version": "1.0.0",
-  "description": "Connect your coding agent to Bluebox, the observability agent for AI-native development. Check production before planning a change, pick up a Bluebox investigation's root cause, and add OpenTelemetry to your services. Requires a Bluebox account and the bluebox CLI.",
+  "description": "Connect your coding agent to Bluebox, the observability agent for AI-native development. Check production before planning a change, pick up a Bluebox investigation's root cause, and add OpenTelemetry to your services. Requires a Bluebox account.",
   "author": {
     "name": "Bluebox",
     "url": "https://bluebox.ai"
@@ -21,7 +21,7 @@
   "interface": {
     "displayName": "Bluebox",
     "shortDescription": "Production context for agents",
-    "longDescription": "Bring Bluebox into Codex. Check how a service behaves in production before planning a change, pick up the root cause of a Bluebox investigation, and add OpenTelemetry to your services. Includes five Bluebox skills and the Bluebox MCP server, which you sign in to with OAuth on first use. Requires a Bluebox account; some skills also use the bluebox CLI.",
+    "longDescription": "Bring Bluebox into Codex. Check how a service behaves in production before planning a change, pick up the root cause of a Bluebox investigation, and add OpenTelemetry to your services. Includes five Bluebox skills and the Bluebox MCP server, which you sign in to with OAuth on first use. Requires a Bluebox account; the bluebox CLI is optional.",
     "developerName": "Bluebox",
     "category": "Developer Tools",
     "capabilities": [
@@ -40,7 +40,6 @@
     ],
     "composerIcon": "./assets/bluebox-logo.png",
     "logo": "./assets/bluebox-logo.png",
-    "screenshots": [],
     "brandColor": "#0051FF"
   }
 }

@@ -6,8 +6,8 @@
   "description": "Connect your coding agent to Bluebox, the observability agent for AI-native development. Check production before planning a change, pick up a Bluebox investigation's root cause, and add OpenTelemetry to your services.",
   "logo": "assets/bluebox-logo.png",
   "suggestedPrompts": [
-    "What does production look like for this service before I change it?",
-    "Load the root cause of the Bluebox investigation behind this GitHub issue",
+    "Check production for this service before we change it",
+    "Load the root cause of my latest Bluebox investigation",
     "Add OpenTelemetry to this service and send its telemetry to Bluebox"
   ],
   "author": {

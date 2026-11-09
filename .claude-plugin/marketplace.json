@@ -5,7 +5,7 @@
     "url": "https://bluebox.ai"
   },
   "metadata": {
-    "description": "Bluebox skills for coding agents."
+    "description": "Production context for agents"
   },
   "plugins": [
     {
