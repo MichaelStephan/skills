@@ -10,7 +10,7 @@ The server sets no headers, so clients sign in to Bluebox through OAuth.
 
 ### Publish by hand
 
-You need to be a member of the `bluebox-hq` GitHub organization. The registry grants the `io.github.bluebox-hq/*` namespace to members.
+You need to be an **owner** of the `bluebox-hq` GitHub organization. The registry grants the `io.github.bluebox-hq/*` namespace only to org owners; membership isn't enough.
 
 1. Install `mcp-publisher`:
 
@@ -26,11 +26,11 @@ You need to be a member of the `bluebox-hq` GitHub organization. The registry gr
 
    ```bash
    mcp-publisher validate
-   mcp-publisher login github
+   mcp-publisher login github --token "$GITHUB_TOKEN"
    mcp-publisher publish
    ```
 
-   `login github` opens a GitHub device login in your browser.
+   Sign in with a personal access token. The browser login (`login github` without `--token`) can't publish to an organization namespace yet ([modelcontextprotocol/registry#1468](https://github.com/modelcontextprotocol/registry/issues/1468)). The token must let the registry read your org role: a classic token with the `read:org` scope, or a fine-grained token for `bluebox-hq` with **Members: Read**.
 
 4. Check that the new version is live:
 
@@ -42,7 +42,7 @@ You need to be a member of the `bluebox-hq` GitHub organization. The registry gr
 
 Don't run `mcp-publisher status` to check a publish. It changes the lifecycle state of the published server.
 
-If `publish` fails with HTTP 403, the name doesn't match a namespace you own. The name must start with `io.github.bluebox-hq/`, and the comparison is case-sensitive. Check that you're a member of `bluebox-hq`.
+If `publish` fails with HTTP 403, the name doesn't match a namespace you own. The name must start with `io.github.bluebox-hq/`, and the comparison is case-sensitive. Check that you're an owner of `bluebox-hq` and that your token can read your org role.
 
 ### Automate publishing later
 
@@ -51,7 +51,7 @@ If `publish` fails with HTTP 403, the name doesn't match a namespace you own. Th
 Before you add the workflow:
 
 1. **Create the environment first.** In **Settings → Environments**, create `mcp-registry-publish` and add required reviewers. The OIDC token can publish anything under `io.github.bluebox-hq/*`, not only this server. If a workflow names an environment that doesn't exist, GitHub creates it on the first run without protection rules.
-2. **Limit who can create `v*` tags.** Add a tag ruleset, because anyone who can push a `v*` tag starts a publish.
+2. **Limit who can create `mcp-v*` tags.** Add a tag ruleset for `mcp-v*`, because anyone who can push one starts a publish. Leave `v*` tags alone: the skills sync pushes a `v<release>` tag on every Bluebox release.
 3. **Decide who bumps the version.** The skills sync replaces only `skills/`, so it doesn't change `server.json`. Either bump `version` and tag by hand, or extend the Bluebox release process to do it.
 
 Then add `.github/workflows/publish-mcp.yml`:
@@ -61,7 +61,7 @@ name: Publish to MCP Registry
 
 on:
   push:
-    tags: ["v*"]
+    tags: ["mcp-v*"]
   workflow_dispatch:
 
 permissions:
@@ -82,14 +82,14 @@ jobs:
       id-token: write
       contents: read
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Check the tag matches the server.json version
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: startsWith(github.ref, 'refs/tags/mcp-v')
         run: |
-          tag="${GITHUB_REF#refs/tags/v}"
+          tag="${GITHUB_REF#refs/tags/mcp-v}"
           actual=$(jq -r .version server.json)
           if [ "$tag" != "$actual" ]; then
-            echo "FAIL tag v$tag does not match server.json version \"$actual\""
+            echo "FAIL tag mcp-v$tag does not match server.json version \"$actual\""
             exit 1
           fi
       - name: Install mcp-publisher
@@ -103,7 +103,7 @@ jobs:
           ./mcp-publisher publish
 ```
 
-To release, bump `version` in `server.json` (for example to `1.0.1`) and merge the change. Then push the matching tag with `git tag v1.0.1 && git push origin v1.0.1`, and approve the job in **Actions**. When you update `mcp-publisher`, update `MCP_PUBLISHER_VERSION` and `MCP_PUBLISHER_SHA256` together.
+To release, bump `version` in `server.json` (for example to `1.0.1`) and merge the change. Then push the matching tag with `git tag mcp-v1.0.1 && git push origin mcp-v1.0.1`, and approve the job in **Actions**. When you update `mcp-publisher`, update `MCP_PUBLISHER_VERSION` and `MCP_PUBLISHER_SHA256` together.
 
 ## OpenAI plugin directory (ChatGPT and Codex)
 
@@ -134,10 +134,10 @@ The plugin files need no publish step. Each client reads them from this reposito
 
 | Client | Files | Listing |
 |---|---|---|
-| Claude Code | `.claude-plugin/`, `.mcp.json` | Self-hosted now (`claude plugin marketplace add bluebox-hq/skills`). Directory listing: submit the repository once at <https://claude.ai/admin-settings/directory/submissions/plugins/new>. After approval, the catalog syncs nightly. |
+| Claude Code | `.claude-plugin/`, `.mcp.json` | Self-hosted now (`claude plugin marketplace add bluebox-hq/skills`). Directory listing: submit the repository in the developer portal at <https://claude.ai/directory/manage>. New versions arrive by GitHub push webhook or a scheduled check, and the directory scans each one before it goes live. |
 | Codex and ChatGPT desktop | `.codex-plugin/plugin.json`, `.agents/plugins/marketplace.json`, `.mcp.json`, `skills/` | Self-hosted now: `codex plugin marketplace add bluebox-hq/skills`. The ChatGPT desktop app (Work mode) shows the same marketplace as a source in its Plugins Directory. Codex refreshes installed plugins only when `version` changes, so bump `version` in `.codex-plugin/plugin.json` with each release. |
 | ChatGPT web and mobile | The submission ZIP (see [OpenAI plugin directory](#openai-plugin-directory-chatgpt-and-codex)) | Only listed plugins reach web and mobile: there is no install from GitHub. Until the listing, users can add just the MCP server as a custom MCP server at <https://chatgpt.com/plugins>. |
 | Cursor | `.cursor-plugin/plugin.json`, `mcp.json` | Submit once at <https://cursor.com/marketplace/publish>. |
 | Devin | `.devin-plugin/plugin.json`, `skills/` | Install from this repository now (`devin plugins install bluebox-hq/skills`). Marketplace: open a pull request to [CognitionAI/devin-marketplace](https://github.com/CognitionAI/devin-marketplace) that adds `{"source": "url", "url": "https://github.com/bluebox-hq/skills.git", "sha": "<full commit sha>"}` to `optionalPlugins` in `.devin-plugin/plugin.json`, then run `python3 scripts/validate.py --fix` and `python3 scripts/validate.py --fetch`. The pin is a full commit SHA, so open a pull request that bumps it after each release. |
 | Google Antigravity | `.antigravity-plugin/plugin.json`, `mcp_config.json` | Install by URL now (`agy plugin install https://github.com/bluebox-hq/skills`). Marketplace: Google's interest form. The Marketplace needs a higher `version` in `.antigravity-plugin/plugin.json` for every update. |
-| Kiro | `POWER.md`, `mcp.json` | Install by repository URL now. Directory listing: submit once at <https://kiro.dev/powers/submit>. |
+| Kiro | `POWER.md`, `mcp.json` | Install by repository URL now. A directory listing at <https://kiro.dev/powers/submit> needs a root `plugin.json` in the Agent Plugins format, plus privacy policy and support links in the README. Cursor and the OpenAI plugin format would read a root `plugin.json` too, so a Kiro listing needs its own layout. |
