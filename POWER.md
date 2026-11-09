@@ -23,7 +23,7 @@ Bluebox is the observability agent for AI-native development. This power connect
 
 1. You need a Bluebox account. The first time you sign in, Bluebox creates a workspace for you. It answers once that workspace has an observability backend connected and your services send OpenTelemetry traces to it.
 2. Install this power. When Kiro connects to the `bluebox` server, sign in to Bluebox in the browser window that opens.
-3. If you belong to more than one workspace, set your **preferred workspace** in your Bluebox profile settings, or pass `workspace_id` to the tools. Call `list_workspaces` to see your workspaces.
+3. If you belong to more than one workspace, open the one you want in Bluebox's workspace settings and turn on **Open this workspace by default when you sign in**, or pass `workspace_id` to the tools. Call `list_workspaces` to see your workspaces.
 
 # Available MCP Servers
 
@@ -73,7 +73,7 @@ All tools only read Bluebox data. `ask` saves the question and its answer as a c
 |---|---|---|
 | HTTP 401 on tool calls | Sign-in expired or was revoked | Reconnect the `bluebox` server in Kiro's MCP panel and sign in again |
 | A service is missing from `list_services` | Services derived from traces are listed only while they send traffic | Check under **Environment** in Bluebox that the service sends OpenTelemetry traces |
-| Answers come from the wrong workspace | Bluebox picks the preferred, most recent or only workspace | Set the preferred workspace in Bluebox, or pass `workspace_id` |
+| Answers come from the wrong workspace | Bluebox picks your default, most recent or only workspace | Set a default workspace in Bluebox's workspace settings, or pass `workspace_id` |
 
 # More Information
 

@@ -35,7 +35,7 @@ You need to be an **owner** of the `bluebox-hq` GitHub organization. The registr
 4. Check that the new version is live:
 
    ```bash
-   curl -s "https://registry.modelcontextprotocol.io/v0/servers?search=io.github.bluebox-hq/bluebox"
+   curl -s "https://registry.modelcontextprotocol.io/v0.1/servers?search=io.github.bluebox-hq/bluebox"
    ```
 
 5. First publish only: email `partnerships@github.com` and ask them to list `io.github.bluebox-hq/bluebox` on github.com/mcp. GitHub curates that list. After the first listing, new versions sync automatically.
@@ -122,7 +122,7 @@ Run it from a clean checkout of the commit you want to submit.
 ### Before you submit
 
 1. **Domain verification.** The portal shows a challenge token. Serve it as plain text, the token only, at `https://app.bluebox.ai/.well-known/openai-apps-challenge`, or on an eligible parent domain.
-2. **MCP server.** Connect `https://app.bluebox.ai/v1/mcp` with **OAuth**. The portal allows one MCP server per plugin and rejects server headers, so don't add a token.
+2. **MCP server.** Connect `https://app.bluebox.ai/v1/mcp` with **OAuth**. A plugin can connect only one MCP server. The portal rejects server headers, so don't add a token.
 3. **Review materials.** A reviewer test account that works without MFA, email codes or magic links, with sample data. Add 5 positive and 3 negative test cases, a video walkthrough of the test cases, and release notes.
 4. **Version.** Bump `version` in `.codex-plugin/plugin.json` for every new ZIP.
 
