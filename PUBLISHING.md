@@ -50,7 +50,7 @@ If `publish` fails with HTTP 403, the name doesn't match a namespace you own. Th
 
 Before you add the workflow:
 
-1. **Create the environment first.** In **Settings → Environments**, create `mcp-registry-publish` and add required reviewers. The OIDC token can publish anything under `io.github.bluebox-hq/*`, not only this server. If a workflow names an environment that doesn't exist, GitHub creates it on the first run without protection rules.
+1. **Create the environment first.** In **Settings → Environments**, create `mcp-registry-publish` and add required reviewers. The OIDC token can publish anything under `io.github.bluebox-hq/*`, not only this server. If a workflow names an environment that doesn't exist, GitHub creates it on the first run without protection rules. Under **Deployment branches and tags**, allow only tags that match `mcp-v*`.
 2. **Limit who can create `mcp-v*` tags.** Add a tag ruleset for `mcp-v*`, because anyone who can push one starts a publish. Leave `v*` tags alone: the skills sync pushes a `v<release>` tag on every Bluebox release.
 3. **Decide who bumps the version.** The skills sync replaces only `skills/`, so it doesn't change `server.json`. Either bump `version` and tag by hand, or extend the Bluebox release process to do it.
 
@@ -62,7 +62,6 @@ name: Publish to MCP Registry
 on:
   push:
     tags: ["mcp-v*"]
-  workflow_dispatch:
 
 permissions:
   contents: read
@@ -84,7 +83,6 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Check the tag matches the server.json version
-        if: startsWith(github.ref, 'refs/tags/mcp-v')
         run: |
           tag="${GITHUB_REF#refs/tags/mcp-v}"
           actual=$(jq -r .version server.json)
@@ -135,7 +133,7 @@ The plugin files need no publish step. Each client reads them from this reposito
 | Client | Files | Listing |
 |---|---|---|
 | Claude Code | `.claude-plugin/`, `.mcp.json` | Self-hosted now (`claude plugin marketplace add bluebox-hq/skills`). Directory listing: submit the repository in the developer portal at <https://claude.ai/directory/manage>. New versions arrive by GitHub push webhook or a scheduled check, and the directory scans each one before it goes live. |
-| Codex and ChatGPT desktop | `.codex-plugin/plugin.json`, `.agents/plugins/marketplace.json`, `.mcp.json`, `skills/` | Self-hosted now: `codex plugin marketplace add bluebox-hq/skills`. The ChatGPT desktop app (Work mode) shows the same marketplace as a source in its Plugins Directory. Codex refreshes installed plugins only when `version` changes, so bump `version` in `.codex-plugin/plugin.json` with each release. |
+| Codex and ChatGPT desktop | `.codex-plugin/plugin.json`, `.agents/plugins/marketplace.json`, `.mcp.json`, `skills/` | Self-hosted now: `codex plugin marketplace add bluebox-hq/skills`. The ChatGPT desktop app (Work mode) shows the same marketplace as a source in its Plugins Directory. `codex plugin marketplace upgrade` reinstalls the plugin when this repository has new commits, so skill updates reach Codex users without a `version` bump. Bump `version` for each new OpenAI directory ZIP. |
 | ChatGPT web and mobile | The submission ZIP (see [OpenAI plugin directory](#openai-plugin-directory-chatgpt-and-codex)) | Only listed plugins reach web and mobile: there is no install from GitHub. Until the listing, users can add just the MCP server as a custom MCP server at <https://chatgpt.com/plugins>. |
 | Cursor | `.cursor-plugin/plugin.json`, `mcp.json` | Submit once at <https://cursor.com/marketplace/publish>. |
 | Devin | `.devin-plugin/plugin.json`, `skills/` | Install from this repository now (`devin plugins install bluebox-hq/skills`). Marketplace: open a pull request to [CognitionAI/devin-marketplace](https://github.com/CognitionAI/devin-marketplace) that adds `{"source": "url", "url": "https://github.com/bluebox-hq/skills.git", "sha": "<full commit sha>"}` to `optionalPlugins` in `.devin-plugin/plugin.json`, then run `python3 scripts/validate.py --fix` and `python3 scripts/validate.py --fetch`. The pin is a full commit SHA, so open a pull request that bumps it after each release. |

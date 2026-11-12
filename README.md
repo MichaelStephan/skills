@@ -38,9 +38,11 @@ Name one or more skills after `--skill` to install only those; `bluebox-otel-ins
 
 ## Plugins
 
-Claude Code, Codex, the ChatGPT desktop app, Cursor, Devin, Google Antigravity and Kiro can install Bluebox as one plugin instead. The plugin also connects your agent to the [Bluebox MCP server](https://docs.bluebox.ai/mcp-server). You sign in to Bluebox in your browser the first time the agent connects, so you don't need an access token.
+Claude Code, Codex, the ChatGPT desktop app, Cursor, Devin, Google Antigravity and Kiro can install Bluebox as one plugin instead. The plugin also connects your agent to the [Bluebox MCP server](https://docs.bluebox.ai/mcp-server). In Kiro, the plugin is a power with the MCP server only; see [Kiro](#kiro). You sign in to Bluebox in your browser the first time the agent connects, so you don't need an access token.
 
 Install the skills with one tool only. If you use the plugin, don't also install the skills with `npx skills` or `bluebox setup`, or your agent loads each skill twice.
+
+If you added a `bluebox` MCP server by hand before, Claude Code and Codex keep using it and skip the plugin's. Remove it first with `claude mcp remove bluebox` or `codex mcp remove bluebox`.
 
 ### Claude Code
 
@@ -95,7 +97,7 @@ Antigravity opens the Bluebox sign-in when it first connects to the `bluebox` MC
 
 ### Kiro
 
-Kiro installs Bluebox as a power: the MCP server plus a guide for the agent ([POWER.md](POWER.md)). Open the **Powers** panel, select **Add Custom Power**, choose **Import power from GitHub** and enter `https://github.com/bluebox-hq/skills`. Kiro opens the Bluebox sign-in when it first connects. The power doesn't include the skills. To add them, run `npx skills add bluebox-hq/skills --skill '*' --agent kiro`.
+Kiro installs Bluebox as a power: the MCP server plus a guide for the agent ([POWER.md](POWER.md)). Open the **Powers** panel, select **Add Custom Power**, choose **Import power from GitHub** and enter `https://github.com/bluebox-hq/skills`. Kiro opens the Bluebox sign-in when it first connects. The power doesn't include the skills. To add them, run `npx skills add bluebox-hq/skills --skill '*' --agent kiro-cli`.
 
 ## Update and remove
 

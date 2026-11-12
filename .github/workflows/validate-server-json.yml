@@ -2,10 +2,10 @@ name: Validate server.json
 
 on:
   pull_request:
-    paths: ["server.json"]
+    paths: ["server.json", ".github/workflows/validate-server-json.yml"]
   push:
     branches: [main]
-    paths: ["server.json"]
+    paths: ["server.json", ".github/workflows/validate-server-json.yml"]
   workflow_dispatch:
 
 permissions:
