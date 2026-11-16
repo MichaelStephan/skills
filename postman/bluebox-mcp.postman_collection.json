@@ -1,0 +1,1005 @@
+{
+  "info": {
+    "name": "Bluebox MCP server",
+    "_postman_id": "6c3f8a2e-4b1d-4f7a-9e5c-2d8b7a1f0c34",
+    "description": "Requests for the [Bluebox MCP server](https://docs.bluebox.ai/mcp-server) at `https://app.bluebox.ai/v1/mcp`: JSON-RPC over Streamable HTTP.\n\n**Sign in with OAuth**\n\n1. Send **Setup \u2192 Register the Postman client**. It saves `client_id`.\n2. On the collection's **Authorization** tab, select **Get New Access Token** and sign in to Bluebox in the window that opens.\n3. Send the requests in **Sign in (OAuth)**.\n\n**Use an access token**\n\nWhere a browser can't open, [create an access token](https://docs.bluebox.ai/mcp-server#create-an-access-token), set it as the `access_token` variable and send the requests in **Access token**.\n\n**Variables**\n\nCalls without `workspace_id` use your default workspace. `list_workspaces`, `list_services` and `list_investigations` fill `workspace_id`, `entity_id` and `investigation_id` when they are empty, and `ask` saves `conversation_id`. Empty variables are left out of tool calls.\n\n`ask` starts a Bluebox run that counts against the workspace's daily AI usage. Every other tool only reads.\n",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "oauth2",
+    "oauth2": [
+      {
+        "key": "tokenName",
+        "value": "Bluebox",
+        "type": "string"
+      },
+      {
+        "key": "grant_type",
+        "value": "authorization_code_with_pkce",
+        "type": "string"
+      },
+      {
+        "key": "challengeAlgorithm",
+        "value": "S256",
+        "type": "string"
+      },
+      {
+        "key": "authUrl",
+        "value": "{{base_url}}/v1/oauth/authorize",
+        "type": "string"
+      },
+      {
+        "key": "accessTokenUrl",
+        "value": "{{base_url}}/v1/oauth/token",
+        "type": "string"
+      },
+      {
+        "key": "clientId",
+        "value": "{{client_id}}",
+        "type": "string"
+      },
+      {
+        "key": "client_authentication",
+        "value": "body",
+        "type": "string"
+      },
+      {
+        "key": "scope",
+        "value": "mcp:tools offline_access",
+        "type": "string"
+      },
+      {
+        "key": "redirect_uri",
+        "value": "https://oauth.pstmn.io/v1/callback",
+        "type": "string"
+      },
+      {
+        "key": "useBrowser",
+        "value": false,
+        "type": "boolean"
+      },
+      {
+        "key": "addTokenTo",
+        "value": "header",
+        "type": "string"
+      },
+      {
+        "key": "headerPrefix",
+        "value": "Bearer",
+        "type": "string"
+      },
+      {
+        "key": "authRequestParams",
+        "type": "any",
+        "value": [
+          {
+            "key": "resource",
+            "value": "{{base_url}}/v1/mcp",
+            "enabled": true,
+            "send_as": "request_url"
+          }
+        ]
+      },
+      {
+        "key": "tokenRequestParams",
+        "type": "any",
+        "value": [
+          {
+            "key": "resource",
+            "value": "{{base_url}}/v1/mcp",
+            "enabled": true,
+            "send_as": "request_body"
+          }
+        ]
+      },
+      {
+        "key": "refreshRequestParams",
+        "type": "any",
+        "value": [
+          {
+            "key": "resource",
+            "value": "{{base_url}}/v1/mcp",
+            "enabled": true,
+            "send_as": "request_body"
+          }
+        ]
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Drops empty-string tool arguments, so an unset variable such as {{entity_id}}",
+          "// is left out of the call instead of failing the tool's input validation.",
+          "if (pm.request.method === 'POST' && pm.request.body && pm.request.body.mode === 'raw') {",
+          "    let body;",
+          "    try {",
+          "        body = JSON.parse(pm.variables.replaceIn(pm.request.body.raw));",
+          "    } catch (e) {",
+          "        body = null;",
+          "    }",
+          "    const args = body && body.params && body.params.arguments;",
+          "    if (args) {",
+          "        Object.keys(args).forEach((k) => {",
+          "            if (args[k] === '') {",
+          "                delete args[k];",
+          "            }",
+          "        });",
+          "        pm.request.body.update(JSON.stringify(body, null, 2));",
+          "    }",
+          "}"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Reads the JSON-RPC message from a JSON or an SSE (text/event-stream) response,",
+          "// checks it for errors and saves IDs for the next requests.",
+          "pm.test('HTTP status is 2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+          "",
+          "const contentType = pm.response.headers.get('Content-Type') || '';",
+          "const text = pm.response.text();",
+          "let msg = null;",
+          "if (contentType.includes('text/event-stream')) {",
+          "    const data = text.split(/\\r?\\n/).filter((l) => l.startsWith('data:'));",
+          "    if (data.length) {",
+          "        msg = JSON.parse(data[data.length - 1].slice(5));",
+          "    }",
+          "} else if (contentType.includes('application/json') && text) {",
+          "    msg = JSON.parse(text);",
+          "}",
+          "",
+          "if (msg && msg.jsonrpc) {",
+          "    pm.test('JSON-RPC call has no error', () => {",
+          "        pm.expect(msg.error, JSON.stringify(msg.error)).to.be.undefined;",
+          "    });",
+          "    const result = msg.result || {};",
+          "    if (result.isError) {",
+          "        const reason = (result.content || []).map((c) => c.text).join(' ');",
+          "        pm.test('Tool call succeeded', () => pm.expect.fail(reason));",
+          "    }",
+          "",
+          "    const sc = result.structuredContent;",
+          "    if (sc) {",
+          "        // Keep IDs the user set; fill only the empty ones.",
+          "        const fill = (name, value) => {",
+          "            if (value && !pm.collectionVariables.get(name)) {",
+          "                pm.collectionVariables.set(name, value);",
+          "            }",
+          "        };",
+          "        const first = (sc.items || [])[0] || {};",
+          "        fill('workspace_id', (sc.meta && sc.meta.default_workspace_id) || first.workspace_id);",
+          "        fill('entity_id', first.entity_id);",
+          "        fill('investigation_id', first.investigation_id);",
+          "        fill('repository_id', first.repository_id);",
+          "        if (sc.conversation_id) {",
+          "            pm.collectionVariables.set('conversation_id', sc.conversation_id);",
+          "        }",
+          "        if (sc.status) {",
+          "            console.log('ask status: ' + sc.status);",
+          "        }",
+          "    }",
+          "}"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "https://app.bluebox.ai"
+    },
+    {
+      "key": "protocol_version",
+      "value": "2025-11-25"
+    },
+    {
+      "key": "client_id",
+      "value": ""
+    },
+    {
+      "key": "access_token",
+      "value": ""
+    },
+    {
+      "key": "workspace_id",
+      "value": ""
+    },
+    {
+      "key": "entity_id",
+      "value": ""
+    },
+    {
+      "key": "investigation_id",
+      "value": ""
+    },
+    {
+      "key": "repository_id",
+      "value": ""
+    },
+    {
+      "key": "conversation_id",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Setup",
+      "item": [
+        {
+          "name": "Protected resource metadata",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/.well-known/oauth-protected-resource/v1/mcp"
+          }
+        },
+        {
+          "name": "Authorization server metadata",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/.well-known/oauth-authorization-server"
+          }
+        },
+        {
+          "name": "Register the Postman client",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Client registered', () => pm.response.to.have.status(201));",
+                  "const clientId = pm.response.json().client_id;",
+                  "if (clientId) {",
+                  "    pm.collectionVariables.set('client_id', clientId);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/v1/oauth/register",
+            "body": {
+              "mode": "raw",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              },
+              "raw": "{\n  \"client_name\": \"Postman\",\n  \"redirect_uris\": [\n    \"https://oauth.pstmn.io/v1/callback\",\n    \"https://oauth.pstmn.io/v1/browser-callback\"\n  ],\n  \"grant_types\": [\n    \"authorization_code\",\n    \"refresh_token\"\n  ],\n  \"response_types\": [\n    \"code\"\n  ],\n  \"token_endpoint_auth_method\": \"none\",\n  \"scope\": \"mcp:tools offline_access\"\n}"
+            },
+            "description": "Registers Postman as a public OAuth client (dynamic client registration) and saves `client_id`. Send it once, before you get a token."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Sign in (OAuth)",
+      "description": "Uses the collection's OAuth 2.0 authorization. Get a token on the collection's **Authorization** tab first.",
+      "item": [
+        {
+          "name": "initialize",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json, text/event-stream"
+              },
+              {
+                "key": "MCP-Protocol-Version",
+                "value": "{{protocol_version}}"
+              }
+            ],
+            "url": "{{base_url}}/v1/mcp",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"id\": 1,\n  \"method\": \"initialize\",\n  \"params\": {\n    \"protocolVersion\": \"{{protocol_version}}\",\n    \"capabilities\": {},\n    \"clientInfo\": {\n      \"name\": \"postman\",\n      \"version\": \"1.0.0\"\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Optional. The server is stateless and issues no `Mcp-Session-Id`, so every other request works without it. Returns the server's capabilities and instructions."
+          }
+        },
+        {
+          "name": "tools/list",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json, text/event-stream"
+              },
+              {
+                "key": "MCP-Protocol-Version",
+                "value": "{{protocol_version}}"
+              }
+            ],
+            "url": "{{base_url}}/v1/mcp",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"id\": 1,\n  \"method\": \"tools/list\",\n  \"params\": {}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Lists the tools with their input and output schemas."
+          }
+        },
+        {
+          "name": "list_workspaces",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json, text/event-stream"
+              },
+              {
+                "key": "MCP-Protocol-Version",
+                "value": "{{protocol_version}}"
+              }
+            ],
+            "url": "{{base_url}}/v1/mcp",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"id\": 1,\n  \"method\": \"tools/call\",\n  \"params\": {\n    \"name\": \"list_workspaces\",\n    \"arguments\": {\n      \"limit\": 50\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Lists your workspaces. Saves `meta.default_workspace_id` to `{{workspace_id}}` when that is empty."
+          }
+        },
+        {
+          "name": "list_repositories",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json, text/event-stream"
+              },
+              {
+                "key": "MCP-Protocol-Version",
+                "value": "{{protocol_version}}"
+              }
+            ],
+            "url": "{{base_url}}/v1/mcp",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"id\": 1,\n  \"method\": \"tools/call\",\n  \"params\": {\n    \"name\": \"list_repositories\",\n    \"arguments\": {\n      \"workspace_id\": \"{{workspace_id}}\"\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Lists the repositories connected to the workspace. Fails if the workspace has no repository connection."
+          }
+        },
+        {
+          "name": "list_services",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json, text/event-stream"
+              },
+              {
+                "key": "MCP-Protocol-Version",
+                "value": "{{protocol_version}}"
+              }
+            ],
+            "url": "{{base_url}}/v1/mcp",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"id\": 1,\n  \"method\": \"tools/call\",\n  \"params\": {\n    \"name\": \"list_services\",\n    \"arguments\": {\n      \"workspace_id\": \"{{workspace_id}}\",\n      \"search\": \"\",\n      \"limit\": 25\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Lists services with `health` and `problem_count`. Saves the first `entity_id`. Optional filters: `health` (healthy, degraded, unknown), `has_problems`, `repository_url`, `service_name`, `environment`, `search`, `cursor`."
+          }
+        },
+        {
+          "name": "list_investigations",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json, text/event-stream"
+              },
+              {
+                "key": "MCP-Protocol-Version",
+                "value": "{{protocol_version}}"
+              }
+            ],
+            "url": "{{base_url}}/v1/mcp",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"id\": 1,\n  \"method\": \"tools/call\",\n  \"params\": {\n    \"name\": \"list_investigations\",\n    \"arguments\": {\n      \"workspace_id\": \"{{workspace_id}}\",\n      \"since\": \"30d\",\n      \"limit\": 25\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Lists investigations (7d by default, up to 365d). Saves the first `investigation_id`. Optional filters: `investigation_status`, `repository_id`, `entity_id`, `cursor`."
+          }
+        },
+        {
+          "name": "get_investigation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json, text/event-stream"
+              },
+              {
+                "key": "MCP-Protocol-Version",
+                "value": "{{protocol_version}}"
+              }
+            ],
+            "url": "{{base_url}}/v1/mcp",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"id\": 1,\n  \"method\": \"tools/call\",\n  \"params\": {\n    \"name\": \"get_investigation\",\n    \"arguments\": {\n      \"workspace_id\": \"{{workspace_id}}\",\n      \"investigation_id\": \"{{investigation_id}}\"\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Reads one investigation's report: summary, impact, root cause, recommendation, evidence."
+          }
+        },
+        {
+          "name": "ask",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json, text/event-stream"
+              },
+              {
+                "key": "MCP-Protocol-Version",
+                "value": "{{protocol_version}}"
+              }
+            ],
+            "url": "{{base_url}}/v1/mcp",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"id\": 1,\n  \"method\": \"tools/call\",\n  \"params\": {\n    \"name\": \"ask\",\n    \"arguments\": {\n      \"workspace_id\": \"{{workspace_id}}\",\n      \"question\": \"Are there any active issues on this service in the last 24 hours?\",\n      \"entity_id\": \"{{entity_id}}\"\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Starts a metered Bluebox run and counts against the workspace's daily AI usage. Waits up to 45s. If `status` is `running`, send `get_ask_result`; sending `ask` again starts a second run. Saves `conversation_id`."
+          }
+        },
+        {
+          "name": "get_ask_result",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json, text/event-stream"
+              },
+              {
+                "key": "MCP-Protocol-Version",
+                "value": "{{protocol_version}}"
+              }
+            ],
+            "url": "{{base_url}}/v1/mcp",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"id\": 1,\n  \"method\": \"tools/call\",\n  \"params\": {\n    \"name\": \"get_ask_result\",\n    \"arguments\": {\n      \"workspace_id\": \"{{workspace_id}}\",\n      \"conversation_id\": \"{{conversation_id}}\",\n      \"wait\": \"45s\"\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Fetches the answer of a running `ask`. Send it again while `status` is `running`."
+          }
+        },
+        {
+          "name": "ask (follow-up)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json, text/event-stream"
+              },
+              {
+                "key": "MCP-Protocol-Version",
+                "value": "{{protocol_version}}"
+              }
+            ],
+            "url": "{{base_url}}/v1/mcp",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"id\": 1,\n  \"method\": \"tools/call\",\n  \"params\": {\n    \"name\": \"ask\",\n    \"arguments\": {\n      \"workspace_id\": \"{{workspace_id}}\",\n      \"conversation_id\": \"{{conversation_id}}\",\n      \"question\": \"What changed compared to the previous day?\"\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Follow-up in the same conversation. Scope (`since`, `entity_id`, ...) carries over. Metered."
+          }
+        },
+        {
+          "name": "ask (about an investigation)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json, text/event-stream"
+              },
+              {
+                "key": "MCP-Protocol-Version",
+                "value": "{{protocol_version}}"
+              }
+            ],
+            "url": "{{base_url}}/v1/mcp",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"id\": 1,\n  \"method\": \"tools/call\",\n  \"params\": {\n    \"name\": \"ask\",\n    \"arguments\": {\n      \"workspace_id\": \"{{workspace_id}}\",\n      \"investigation_id\": \"{{investigation_id}}\",\n      \"question\": \"Is the root cause of this investigation still present?\"\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Asks about the investigation in `{{investigation_id}}`. Metered."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Access token",
+      "description": "Sends `{{access_token}}` as a bearer token instead of OAuth. Use it where a browser can't open.",
+      "auth": {
+        "type": "bearer",
+        "bearer": [
+          {
+            "key": "token",
+            "value": "{{access_token}}",
+            "type": "string"
+          }
+        ]
+      },
+      "item": [
+        {
+          "name": "initialize",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json, text/event-stream"
+              },
+              {
+                "key": "MCP-Protocol-Version",
+                "value": "{{protocol_version}}"
+              }
+            ],
+            "url": "{{base_url}}/v1/mcp",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"id\": 1,\n  \"method\": \"initialize\",\n  \"params\": {\n    \"protocolVersion\": \"{{protocol_version}}\",\n    \"capabilities\": {},\n    \"clientInfo\": {\n      \"name\": \"postman\",\n      \"version\": \"1.0.0\"\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Optional. The server is stateless and issues no `Mcp-Session-Id`, so every other request works without it. Returns the server's capabilities and instructions."
+          }
+        },
+        {
+          "name": "tools/list",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json, text/event-stream"
+              },
+              {
+                "key": "MCP-Protocol-Version",
+                "value": "{{protocol_version}}"
+              }
+            ],
+            "url": "{{base_url}}/v1/mcp",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"id\": 1,\n  \"method\": \"tools/list\",\n  \"params\": {}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Lists the tools with their input and output schemas."
+          }
+        },
+        {
+          "name": "list_workspaces",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json, text/event-stream"
+              },
+              {
+                "key": "MCP-Protocol-Version",
+                "value": "{{protocol_version}}"
+              }
+            ],
+            "url": "{{base_url}}/v1/mcp",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"id\": 1,\n  \"method\": \"tools/call\",\n  \"params\": {\n    \"name\": \"list_workspaces\",\n    \"arguments\": {\n      \"limit\": 50\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Lists your workspaces. Saves `meta.default_workspace_id` to `{{workspace_id}}` when that is empty."
+          }
+        },
+        {
+          "name": "list_repositories",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json, text/event-stream"
+              },
+              {
+                "key": "MCP-Protocol-Version",
+                "value": "{{protocol_version}}"
+              }
+            ],
+            "url": "{{base_url}}/v1/mcp",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"id\": 1,\n  \"method\": \"tools/call\",\n  \"params\": {\n    \"name\": \"list_repositories\",\n    \"arguments\": {\n      \"workspace_id\": \"{{workspace_id}}\"\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Lists the repositories connected to the workspace. Fails if the workspace has no repository connection."
+          }
+        },
+        {
+          "name": "list_services",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json, text/event-stream"
+              },
+              {
+                "key": "MCP-Protocol-Version",
+                "value": "{{protocol_version}}"
+              }
+            ],
+            "url": "{{base_url}}/v1/mcp",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"id\": 1,\n  \"method\": \"tools/call\",\n  \"params\": {\n    \"name\": \"list_services\",\n    \"arguments\": {\n      \"workspace_id\": \"{{workspace_id}}\",\n      \"search\": \"\",\n      \"limit\": 25\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Lists services with `health` and `problem_count`. Saves the first `entity_id`. Optional filters: `health` (healthy, degraded, unknown), `has_problems`, `repository_url`, `service_name`, `environment`, `search`, `cursor`."
+          }
+        },
+        {
+          "name": "list_investigations",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json, text/event-stream"
+              },
+              {
+                "key": "MCP-Protocol-Version",
+                "value": "{{protocol_version}}"
+              }
+            ],
+            "url": "{{base_url}}/v1/mcp",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"id\": 1,\n  \"method\": \"tools/call\",\n  \"params\": {\n    \"name\": \"list_investigations\",\n    \"arguments\": {\n      \"workspace_id\": \"{{workspace_id}}\",\n      \"since\": \"30d\",\n      \"limit\": 25\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Lists investigations (7d by default, up to 365d). Saves the first `investigation_id`. Optional filters: `investigation_status`, `repository_id`, `entity_id`, `cursor`."
+          }
+        },
+        {
+          "name": "get_investigation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json, text/event-stream"
+              },
+              {
+                "key": "MCP-Protocol-Version",
+                "value": "{{protocol_version}}"
+              }
+            ],
+            "url": "{{base_url}}/v1/mcp",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"id\": 1,\n  \"method\": \"tools/call\",\n  \"params\": {\n    \"name\": \"get_investigation\",\n    \"arguments\": {\n      \"workspace_id\": \"{{workspace_id}}\",\n      \"investigation_id\": \"{{investigation_id}}\"\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Reads one investigation's report: summary, impact, root cause, recommendation, evidence."
+          }
+        },
+        {
+          "name": "ask",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json, text/event-stream"
+              },
+              {
+                "key": "MCP-Protocol-Version",
+                "value": "{{protocol_version}}"
+              }
+            ],
+            "url": "{{base_url}}/v1/mcp",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"id\": 1,\n  \"method\": \"tools/call\",\n  \"params\": {\n    \"name\": \"ask\",\n    \"arguments\": {\n      \"workspace_id\": \"{{workspace_id}}\",\n      \"question\": \"Are there any active issues on this service in the last 24 hours?\",\n      \"entity_id\": \"{{entity_id}}\"\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Starts a metered Bluebox run and counts against the workspace's daily AI usage. Waits up to 45s. If `status` is `running`, send `get_ask_result`; sending `ask` again starts a second run. Saves `conversation_id`."
+          }
+        },
+        {
+          "name": "get_ask_result",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json, text/event-stream"
+              },
+              {
+                "key": "MCP-Protocol-Version",
+                "value": "{{protocol_version}}"
+              }
+            ],
+            "url": "{{base_url}}/v1/mcp",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"id\": 1,\n  \"method\": \"tools/call\",\n  \"params\": {\n    \"name\": \"get_ask_result\",\n    \"arguments\": {\n      \"workspace_id\": \"{{workspace_id}}\",\n      \"conversation_id\": \"{{conversation_id}}\",\n      \"wait\": \"45s\"\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Fetches the answer of a running `ask`. Send it again while `status` is `running`."
+          }
+        },
+        {
+          "name": "ask (follow-up)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json, text/event-stream"
+              },
+              {
+                "key": "MCP-Protocol-Version",
+                "value": "{{protocol_version}}"
+              }
+            ],
+            "url": "{{base_url}}/v1/mcp",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"id\": 1,\n  \"method\": \"tools/call\",\n  \"params\": {\n    \"name\": \"ask\",\n    \"arguments\": {\n      \"workspace_id\": \"{{workspace_id}}\",\n      \"conversation_id\": \"{{conversation_id}}\",\n      \"question\": \"What changed compared to the previous day?\"\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Follow-up in the same conversation. Scope (`since`, `entity_id`, ...) carries over. Metered."
+          }
+        },
+        {
+          "name": "ask (about an investigation)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json, text/event-stream"
+              },
+              {
+                "key": "MCP-Protocol-Version",
+                "value": "{{protocol_version}}"
+              }
+            ],
+            "url": "{{base_url}}/v1/mcp",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"id\": 1,\n  \"method\": \"tools/call\",\n  \"params\": {\n    \"name\": \"ask\",\n    \"arguments\": {\n      \"workspace_id\": \"{{workspace_id}}\",\n      \"investigation_id\": \"{{investigation_id}}\",\n      \"question\": \"Is the root cause of this investigation still present?\"\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Asks about the investigation in `{{investigation_id}}`. Metered."
+          }
+        }
+      ]
+    }
+  ]
+}
