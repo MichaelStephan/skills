@@ -2,7 +2,7 @@
   "info": {
     "name": "Bluebox MCP server",
     "_postman_id": "6c3f8a2e-4b1d-4f7a-9e5c-2d8b7a1f0c34",
-    "description": "Requests for the [Bluebox MCP server](https://docs.bluebox.ai/mcp-server) at `https://app.bluebox.ai/v1/mcp`: JSON-RPC over Streamable HTTP.\n\n**Sign in with OAuth**\n\n1. Send **Setup \u2192 Register the Postman client** first. It saves `client_id`, which **Get New Access Token** needs: without it, sign-in fails with \"Cannot sign in: The app that sent you here is not registered or has been disabled.\"\n2. On the collection's **Authorization** tab, select **Get New Access Token** and sign in to Bluebox in the window that opens.\n3. Send the requests in **MCP**.\n\n**Use an access token**\n\nWhere a browser can't open, [create an access token](https://docs.bluebox.ai/mcp-server#create-an-access-token) and set it as `access_token` in a Postman environment or in the Vault, as the **current value** only. Postman syncs and exports initial values, so never put the token there. When `access_token` is set, every request sends it as a bearer token instead of the OAuth token.\n\n**Variables**\n\nCalls without `workspace_id` use your default workspace. `list_workspaces` fills `workspace_id` when it is empty. When you change `workspace_id`, the other IDs are cleared, because they belong to one workspace.\n\n- `entity_id` scopes `ask` and `repository_id` filters `list_investigations`. Neither is filled for you: `list_services` and `list_repositories` log the IDs to the Postman console, and you copy the one you mean.\n- `list_investigations` saves the newest `investigation_id` and logs which one it is.\n- `ask` saves `conversation_id`.\n\nEmpty variables are left out of tool calls.\n\n`ask` starts a Bluebox run that counts against the workspace's daily AI usage. Every other tool only reads.\n",
+    "description": "Requests for the [Bluebox MCP server](https://docs.bluebox.ai/mcp-server) at `https://app.bluebox.ai/v1/mcp`: JSON-RPC over Streamable HTTP.\n\n**Sign in with OAuth**\n\n1. Send **Setup \u2192 Register the Postman client** first. It saves `client_id`, which **Get New Access Token** needs: without it, sign-in fails with \"Cannot sign in: The app that sent you here is not registered or has been disabled.\" A registration that never gets a token is deleted after 30 days; if sign-in shows that message later, send Register again.\n2. On the collection's **Authorization** tab, select **Get New Access Token** and sign in to Bluebox in the window that opens.\n3. Send the requests in **MCP**.\n\n**Use an access token**\n\nWhere a browser can't open, [create an access token](https://docs.bluebox.ai/mcp-server#create-an-access-token) and set it as `access_token` in a Postman environment, as the **current value** only. Postman syncs and exports initial values, so never put the token there. When `access_token` is set, every request sends it as a bearer token instead of the OAuth token.\n\n**Variables**\n\nCalls without `workspace_id` use your default workspace. `list_workspaces` fills `workspace_id` when it is empty. When you change `workspace_id`, in the collection or in an environment, the other IDs are cleared, because they belong to one workspace.\n\n- `entity_id` scopes `ask` and `repository_id` filters `list_investigations`. Neither is filled for you: `list_services` and `list_repositories` log the IDs to the Postman console, and you copy the one you mean.\n- `list_investigations` saves the newest `investigation_id` and logs which one it is.\n- `ask` saves `conversation_id`.\n\nEmpty variables are left out of tool calls. Requests that need `conversation_id` or `investigation_id` are skipped while it is empty, so a follow-up never starts a new metered run by accident.\n\n`ask` starts a Bluebox run that counts against the workspace's AI usage. Every other tool only reads.\n",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -113,16 +113,31 @@
         "type": "text/javascript",
         "exec": [
           "// IDs belong to one workspace: clear them when workspace_id changes.",
-          "const ws = pm.collectionVariables.get('workspace_id') || '';",
+          "// workspace_id and the IDs can also be set in an environment, so read and clear both.",
+          "const ws = pm.variables.get('workspace_id') || '';",
           "if (ws !== (pm.collectionVariables.get('ids_workspace_id') || '')) {",
           "    ['entity_id', 'investigation_id', 'repository_id', 'conversation_id'].forEach((k) => {",
-          "        if (pm.collectionVariables.get(k)) {",
+          "        if (pm.variables.get(k)) {",
           "            console.log('workspace_id changed: cleared ' + k);",
           "        }",
           "        pm.collectionVariables.set(k, '');",
+          "        if (pm.environment.has(k)) {",
+          "            pm.environment.set(k, '');",
+          "        }",
           "    });",
           "    pm.collectionVariables.set('ids_workspace_id', ws);",
           "}",
+          "",
+          "// Without its ID, ask (follow-up) and ask (about an investigation) would start a new",
+          "// metered run, and get_ask_result and get_investigation would fail: skip the request.",
+          "const needs = { conversation_id: 'ask', investigation_id: 'list_investigations' };",
+          "const raw = (pm.request.body && pm.request.body.raw) || '';",
+          "Object.keys(needs).forEach((k) => {",
+          "    if (raw.includes('{{' + k + '}}') && !pm.variables.get(k)) {",
+          "        console.warn('Skipped: ' + k + ' is empty. Send ' + needs[k] + ' first.');",
+          "        pm.execution.skipRequest();",
+          "    }",
+          "});",
           "",
           "// With access_token set, send it as a bearer token instead of the collection's OAuth 2.0.",
           "// pm.request.auth is undefined for requests that inherit the collection auth.",
@@ -193,21 +208,26 @@
           "    }",
           "    if (sc) {",
           "        const items = sc.items || [];",
-          "        if (tool === 'list_workspaces' && !pm.collectionVariables.get('workspace_id')) {",
+          "        if (tool === 'list_workspaces' && !pm.variables.get('workspace_id')) {",
           "            // Fill once: a workspace you set yourself is kept.",
-          "            const id = (sc.meta && sc.meta.default_workspace_id) || (items[0] || {}).workspace_id;",
+          "            const def = sc.meta && sc.meta.default_workspace_id;",
+          "            const id = def || (items[0] || {}).workspace_id;",
           "            if (id) {",
           "                pm.collectionVariables.set('workspace_id', id);",
+          "                if (def) {",
+          "                    // IDs saved so far came from calls without workspace_id, which use the default.",
+          "                    pm.collectionVariables.set('ids_workspace_id', id);",
+          "                }",
           "                console.log('workspace_id set to ' + id);",
           "            }",
           "        }",
           "        if (tool === 'list_services') {",
           "            // Not saved: copy the entity_id of the service you mean into the entity_id variable.",
-          "            items.forEach((s) => console.log(s.name + ' (' + s.health + ')  ' + s.entity_id));",
+          "            items.forEach((s) => console.log((s.service_name || '(no name)') + ' (' + (s.health || 'unknown') + ')  ' + s.entity_id));",
           "        }",
           "        if (tool === 'list_repositories') {",
           "            // Not saved: copy a repository_id into the variable to filter list_investigations.",
-          "            items.forEach((r) => console.log(r.full_name + '  ' + r.repository_id));",
+          "            items.forEach((r) => console.log((r.full_name || '(no name)') + '  ' + r.repository_id));",
           "        }",
           "        if (tool === 'list_investigations' && items.length) {",
           "            // The newest investigation; replaced on every call.",
@@ -312,7 +332,7 @@
               },
               "raw": "{\n  \"client_name\": \"Postman\",\n  \"redirect_uris\": [\n    \"https://oauth.pstmn.io/v1/callback\",\n    \"https://oauth.pstmn.io/v1/browser-callback\"\n  ],\n  \"grant_types\": [\n    \"authorization_code\",\n    \"refresh_token\"\n  ],\n  \"response_types\": [\n    \"code\"\n  ],\n  \"token_endpoint_auth_method\": \"none\",\n  \"scope\": \"mcp:tools offline_access\"\n}"
             },
-            "description": "Registers Postman as a public OAuth client (dynamic client registration) and saves `client_id`. Send it once, before **Get New Access Token**: without `client_id`, sign-in fails with \"Cannot sign in: The app that sent you here is not registered or has been disabled.\""
+            "description": "Registers Postman as a public OAuth client (dynamic client registration) and saves `client_id`. Send it once, before **Get New Access Token**: without `client_id`, sign-in fails with \"Cannot sign in: The app that sent you here is not registered or has been disabled.\" A registration that never gets a token is deleted after 30 days: if sign-in shows that message later, send this again."
           }
         },
         {
@@ -588,7 +608,7 @@
                 }
               }
             },
-            "description": "Starts a metered Bluebox run and counts against the workspace's daily AI usage. Scoped to `{{entity_id}}` when it is set; otherwise Bluebox picks the service from the question, so name the service in it. Waits up to 45s. If `status` is `running`, send `get_ask_result`; sending `ask` again starts a second run. Saves `conversation_id`."
+            "description": "Starts a metered Bluebox run and counts against the workspace's AI usage. Scoped to `{{entity_id}}` when it is set; otherwise Bluebox picks the service from the question, so name the service in it. Waits up to 45s. If `status` is `running`, send `get_ask_result`; sending `ask` again starts a second run. Saves `conversation_id`."
           }
         },
         {
@@ -650,7 +670,7 @@
                 }
               }
             },
-            "description": "Follow-up in the same conversation. Scope (`since`, `entity_id`, ...) carries over. Metered."
+            "description": "Follow-up in the same conversation. Scope (`since`, `entity_id`, ...) carries over. Metered. Skipped while `conversation_id` is empty, so it never starts a new conversation."
           }
         },
         {
@@ -681,7 +701,7 @@
                 }
               }
             },
-            "description": "Asks about the investigation in `{{investigation_id}}`, which the console names after `list_investigations`. Metered."
+            "description": "Asks about the investigation in `{{investigation_id}}`, which the console names after `list_investigations`. Metered. Skipped while `investigation_id` is empty."
           }
         }
       ]
