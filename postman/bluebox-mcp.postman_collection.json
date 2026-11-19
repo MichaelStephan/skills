@@ -2,7 +2,7 @@
   "info": {
     "name": "Bluebox MCP server",
     "_postman_id": "6c3f8a2e-4b1d-4f7a-9e5c-2d8b7a1f0c34",
-    "description": "Requests for the [Bluebox MCP server](https://docs.bluebox.ai/mcp-server) at `https://app.bluebox.ai/v1/mcp`: JSON-RPC over Streamable HTTP.\n\n**Sign in with OAuth**\n\n1. Send **Setup \u2192 Register the Postman client**. It saves `client_id`.\n2. On the collection's **Authorization** tab, select **Get New Access Token** and sign in to Bluebox in the window that opens.\n3. Send the requests in **MCP**.\n\n**Use an access token**\n\nWhere a browser can't open, [create an access token](https://docs.bluebox.ai/mcp-server#create-an-access-token) and set it as `access_token` in a Postman environment or in the Vault, as the **current value** only. Postman syncs and exports initial values, so never put the token there. When `access_token` is set, every request sends it as a bearer token instead of the OAuth token.\n\n**Variables**\n\nCalls without `workspace_id` use your default workspace. `list_workspaces` fills `workspace_id` when it is empty. When you change `workspace_id`, the other IDs are cleared, because they belong to one workspace.\n\n- `entity_id` scopes `ask` and `repository_id` filters `list_investigations`. Neither is filled for you: `list_services` and `list_repositories` log the IDs to the Postman console, and you copy the one you mean.\n- `list_investigations` saves the newest `investigation_id` and logs which one it is.\n- `ask` saves `conversation_id`.\n\nEmpty variables are left out of tool calls.\n\n`ask` starts a Bluebox run that counts against the workspace's daily AI usage. Every other tool only reads.\n",
+    "description": "Requests for the [Bluebox MCP server](https://docs.bluebox.ai/mcp-server) at `https://app.bluebox.ai/v1/mcp`: JSON-RPC over Streamable HTTP.\n\n**Sign in with OAuth**\n\n1. Send **Setup \u2192 Register the Postman client** first. It saves `client_id`, which **Get New Access Token** needs: without it, sign-in fails with \"Cannot sign in: The app that sent you here is not registered or has been disabled.\"\n2. On the collection's **Authorization** tab, select **Get New Access Token** and sign in to Bluebox in the window that opens.\n3. Send the requests in **MCP**.\n\n**Use an access token**\n\nWhere a browser can't open, [create an access token](https://docs.bluebox.ai/mcp-server#create-an-access-token) and set it as `access_token` in a Postman environment or in the Vault, as the **current value** only. Postman syncs and exports initial values, so never put the token there. When `access_token` is set, every request sends it as a bearer token instead of the OAuth token.\n\n**Variables**\n\nCalls without `workspace_id` use your default workspace. `list_workspaces` fills `workspace_id` when it is empty. When you change `workspace_id`, the other IDs are cleared, because they belong to one workspace.\n\n- `entity_id` scopes `ask` and `repository_id` filters `list_investigations`. Neither is filled for you: `list_services` and `list_repositories` log the IDs to the Postman console, and you copy the one you mean.\n- `list_investigations` saves the newest `investigation_id` and logs which one it is.\n- `ask` saves `conversation_id`.\n\nEmpty variables are left out of tool calls.\n\n`ask` starts a Bluebox run that counts against the workspace's daily AI usage. Every other tool only reads.\n",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -275,28 +275,6 @@
       "name": "Setup",
       "item": [
         {
-          "name": "Protected resource metadata",
-          "request": {
-            "auth": {
-              "type": "noauth"
-            },
-            "method": "GET",
-            "header": [],
-            "url": "{{base_url}}/.well-known/oauth-protected-resource/v1/mcp"
-          }
-        },
-        {
-          "name": "Authorization server metadata",
-          "request": {
-            "auth": {
-              "type": "noauth"
-            },
-            "method": "GET",
-            "header": [],
-            "url": "{{base_url}}/.well-known/oauth-authorization-server"
-          }
-        },
-        {
           "name": "Register the Postman client",
           "event": [
             {
@@ -334,10 +312,33 @@
               },
               "raw": "{\n  \"client_name\": \"Postman\",\n  \"redirect_uris\": [\n    \"https://oauth.pstmn.io/v1/callback\",\n    \"https://oauth.pstmn.io/v1/browser-callback\"\n  ],\n  \"grant_types\": [\n    \"authorization_code\",\n    \"refresh_token\"\n  ],\n  \"response_types\": [\n    \"code\"\n  ],\n  \"token_endpoint_auth_method\": \"none\",\n  \"scope\": \"mcp:tools offline_access\"\n}"
             },
-            "description": "Registers Postman as a public OAuth client (dynamic client registration) and saves `client_id`. Send it once, before you get a token."
+            "description": "Registers Postman as a public OAuth client (dynamic client registration) and saves `client_id`. Send it once, before **Get New Access Token**: without `client_id`, sign-in fails with \"Cannot sign in: The app that sent you here is not registered or has been disabled.\""
+          }
+        },
+        {
+          "name": "Protected resource metadata",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/.well-known/oauth-protected-resource/v1/mcp"
+          }
+        },
+        {
+          "name": "Authorization server metadata",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/.well-known/oauth-authorization-server"
           }
         }
-      ]
+      ],
+      "description": "Send **Register the Postman client** before you select **Get New Access Token** on the collection's **Authorization** tab. It saves `client_id`; without it, sign-in fails with \"Cannot sign in: The app that sent you here is not registered or has been disabled.\"\n\nThe two metadata requests are optional: they show what the server advertises."
     },
     {
       "name": "MCP",
